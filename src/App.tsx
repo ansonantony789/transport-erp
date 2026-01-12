@@ -1,17 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, Unlock, AlertTriangle, CheckCircle, Clock, FileText, TrendingUp, Users, Package, DollarSign, Calendar, Search, Filter, Eye, Edit2, Trash2, Plus, X, Check } from 'lucide-react';
 
-// Add type declarations for window.storage (since it won't exist on Vercel)
-declare global {
-  interface Window {
-    storage?: {
-      get: (key: string) => Promise<{ value: string } | null>;
-      set: (key: string, value: string) => Promise<boolean>;
-    };
-  }
-}
+// ============================================================================
+// PERSISTENT STORAGE LAYER
+// ============================================================================
 
-// Then replace the DB object with the localStorage version:
 const DB = {
   async init() {
     const defaults = {
@@ -57,71 +50,6 @@ const DB = {
   },
 
   async addAuditLog(log: any) {
-    const logs = await this.get('auditLogs') || [];
-    logs.push({ ...log, id: Date.now(), timestamp: new Date().toISOString() });
-    await this.set('auditLogs', logs);
-  }
-};
-
-// ... rest of your code...
-
-import React, { useState, useEffect } from 'react';
-import { Lock, Unlock, AlertTriangle, CheckCircle, Clock, FileText, TrendingUp, Users, Package, DollarSign, Calendar, Search, Filter, Eye, Edit2, Trash2, Plus, X, Check } from 'lucide-react';
-
-// ============================================================================
-// PERSISTENT STORAGE LAYER
-// ============================================================================
-
-const DB = {
-  async init() {
-    const defaults = {
-      users: [
-        { id: 1, username: 'clerk1', password: 'clerk123', role: 'CLERK', name: 'Rajesh Kumar' },
-        { id: 2, username: 'super1', password: 'super123', role: 'SUPERVISOR', name: 'Priya Sharma' },
-        { id: 3, username: 'accounts1', password: 'acc123', role: 'ACCOUNTS', name: 'Amit Patel' },
-        { id: 4, username: 'admin', password: 'admin123', role: 'ADMIN', name: 'Sunita Verma' }
-      ],
-      lrs: [],
-      challans: [],
-      pods: [],
-      invoices: [],
-      payments: [],
-      auditLogs: [],
-      editRequests: []
-    };
-
-    for (const [key, value] of Object.entries(defaults)) {
-      try {
-        const existing = await window.storage.get(key);
-        if (!existing) {
-          await window.storage.set(key, JSON.stringify(value));
-        }
-      } catch {
-        await window.storage.set(key, JSON.stringify(value));
-      }
-    }
-  },
-
-  async get(key) {
-    try {
-      const result = await window.storage.get(key);
-      return result ? JSON.parse(result.value) : null;
-    } catch {
-      return null;
-    }
-  },
-
-  async set(key, value) {
-    try {
-      await window.storage.set(key, JSON.stringify(value));
-      return true;
-    } catch (error) {
-      console.error('Storage error:', error);
-      return false;
-    }
-  },
-
-  async addAuditLog(log) {
     const logs = await this.get('auditLogs') || [];
     logs.push({ ...log, id: Date.now(), timestamp: new Date().toISOString() });
     await this.set('auditLogs', logs);
@@ -361,12 +289,12 @@ function Dashboard({ currentUser }) {
 
     const podPending = lrs.filter(lr => {
       if (lr.status !== 'CONFIRMED') return false;
-      const daysDiff = Math.floor((Date.now() - new Date(lr.date)) / (1000 * 60 * 60 * 24));
+      const daysDiff = Math.floor((Date.now() - new Date(lr.date).getTime()) / (1000 * 60 * 60 * 24));
       return daysDiff > 10;
     });
 
-    const calculateAgeing = (invoiceDate) => {
-      const days = Math.floor((Date.now() - new Date(invoiceDate)) / (1000 * 60 * 60 * 24));
+    const calculateAgeing = (invoiceDate: string) => {
+      const days = Math.floor((Date.now() - new Date(invoiceDate).getTime()) / (1000 * 60 * 60 * 24));
       if (days <= 30) return '0-30';
       if (days <= 60) return '31-60';
       if (days <= 90) return '61-90';
@@ -487,7 +415,7 @@ function Dashboard({ currentUser }) {
                 <span className="text-sm font-medium text-gray-700">{bucket} days</span>
               </div>
               <span className="text-lg font-semibold text-gray-900">
-                ₹{amount.toLocaleString('en-IN')}
+                ₹{(amount as number).toLocaleString('en-IN')}
               </span>
             </div>
           ))}
@@ -1298,7 +1226,7 @@ function PODManagement({ currentUser, permissions }) {
 
   const pendingPOD = lrs.filter(lr => {
     if (lr.status !== 'CONFIRMED') return false;
-    const daysDiff = Math.floor((Date.now() - new Date(lr.date)) / (1000 * 60 * 60 * 24));
+    const daysDiff = Math.floor((Date.now() - new Date(lr.date).getTime()) / (1000 * 60 * 60 * 24));
     return daysDiff > 10;
   });
 
@@ -1334,7 +1262,7 @@ function PODManagement({ currentUser, permissions }) {
           </thead>
           <tbody className="divide-y">
             {lrs.map(lr => {
-              const days = Math.floor((Date.now() - new Date(lr.date)) / (1000 * 60 * 60 * 24));
+              const days = Math.floor((Date.now() - new Date(lr.date).getTime()) / (1000 * 60 * 60 * 24));
               return (
                 <tr key={lr.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm font-medium">{lr.lrNumber}</td>
@@ -1801,7 +1729,7 @@ function PaymentManagement({ currentUser, permissions }) {
       .reduce((sum, p) => sum + p.amount, 0);
     
     const outstanding = invoice.grandTotal - paid;
-    const days = Math.floor((Date.now() - new Date(invoice.date)) / (1000 * 60 * 60 * 24));
+    const days = Math.floor((Date.now() - new Date(invoice.date).getTime()) / (1000 * 60 * 60 * 24));
     
     return { invoice, paid, outstanding, days };
   };
