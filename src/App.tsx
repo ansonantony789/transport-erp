@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Unlock, AlertTriangle, CheckCircle, Clock, FileText, TrendingUp, Users, Package, DollarSign, Calendar, Search, Filter, Eye, Edit2, Trash2, Plus, X, Check, LucideIcon } from 'lucide-react';
+import { Lock, Unlock, AlertTriangle, CheckCircle, Clock, FileText, TrendingUp, Users, Package, DollarSign, Calendar, Search, Filter, Eye, Edit2, Trash2, Plus, X, Check, Menu, LucideIcon } from 'lucide-react';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -335,6 +335,7 @@ export default function TransportERP() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     DB.init().then(() => setLoading(false));
@@ -365,19 +366,25 @@ export default function TransportERP() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
               <Package className="w-8 h-8 text-indigo-600" />
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-xl font-bold text-gray-900">Transport ERP</h1>
                 <p className="text-xs text-gray-500">Logistics Management System</p>
               </div>
+              <div className="sm:hidden">
+                <h1 className="text-lg font-bold text-gray-900">Transport ERP</h1>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
                 <p className="text-xs text-gray-500">{currentUser.role}</p>
               </div>
+              <div className="text-right sm:hidden">
+                <p className="text-xs font-medium text-gray-900">{currentUser.name}</p>
+              </div>
               <button
                 onClick={() => setCurrentUser(null)}
-                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
               >
                 Logout
               </button>
@@ -389,7 +396,26 @@ export default function TransportERP() {
       {/* Navigation */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-1 overflow-x-auto">
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden py-3">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="flex items-center space-x-2 w-full justify-between px-2 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition"
+            >
+              <div className="flex items-center space-x-2">
+                <Menu className="w-5 h-5" />
+                <span className="font-medium">Menu</span>
+              </div>
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex space-x-1 overflow-x-auto">
             <NavTab active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={TrendingUp}>
               Dashboard
             </NavTab>
@@ -417,11 +443,43 @@ export default function TransportERP() {
               Audit Log
             </NavTab>
           </nav>
+
+          {/* Mobile Navigation */}
+          {mobileMenuOpen && (
+            <nav className="lg:hidden pb-3 space-y-1">
+              <MobileNavTab active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} icon={TrendingUp}>
+                Dashboard
+              </MobileNavTab>
+              <MobileNavTab active={activeTab === 'lr'} onClick={() => { setActiveTab('lr'); setMobileMenuOpen(false); }} icon={FileText}>
+                LR Management
+              </MobileNavTab>
+              <MobileNavTab active={activeTab === 'challan'} onClick={() => { setActiveTab('challan'); setMobileMenuOpen(false); }} icon={Package}>
+                Challans
+              </MobileNavTab>
+              <MobileNavTab active={activeTab === 'pod'} onClick={() => { setActiveTab('pod'); setMobileMenuOpen(false); }} icon={CheckCircle}>
+                POD Entry
+              </MobileNavTab>
+              <MobileNavTab active={activeTab === 'invoice'} onClick={() => { setActiveTab('invoice'); setMobileMenuOpen(false); }} icon={FileText}>
+                Invoices
+              </MobileNavTab>
+              <MobileNavTab active={activeTab === 'payment'} onClick={() => { setActiveTab('payment'); setMobileMenuOpen(false); }} icon={DollarSign}>
+                Payments
+              </MobileNavTab>
+              {permissions.approveEdits && (
+                <MobileNavTab active={activeTab === 'approvals'} onClick={() => { setActiveTab('approvals'); setMobileMenuOpen(false); }} icon={Lock}>
+                  Approvals
+                </MobileNavTab>
+              )}
+              <MobileNavTab active={activeTab === 'audit'} onClick={() => { setActiveTab('audit'); setMobileMenuOpen(false); }} icon={Eye}>
+                Audit Log
+              </MobileNavTab>
+            </nav>
+          )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6">
         {activeTab === 'dashboard' && <Dashboard currentUser={currentUser} />}
         {activeTab === 'lr' && <LRManagement currentUser={currentUser} permissions={permissions} />}
         {activeTab === 'challan' && <ChallanManagement currentUser={currentUser} permissions={permissions} />}
@@ -446,6 +504,22 @@ function NavTab({ active, onClick, icon: Icon, children }: NavTabProps) {
       }`}
     >
       <Icon className="w-4 h-4" />
+      <span>{children}</span>
+    </button>
+  );
+}
+
+function MobileNavTab({ active, onClick, icon: Icon, children }: NavTabProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg transition w-full text-left ${
+        active
+          ? 'bg-indigo-50 text-indigo-600 border-l-4 border-indigo-600'
+          : 'text-gray-700 hover:bg-gray-50'
+      }`}
+    >
+      <Icon className="w-5 h-5" />
       <span>{children}</span>
     </button>
   );
@@ -532,10 +606,10 @@ function Dashboard({ currentUser }: DashboardProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-        <div className="text-sm text-gray-500">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h2>
+        <div className="text-xs sm:text-sm text-gray-500">
           Logged in as: <span className="font-medium text-gray-900">{currentUser.name}</span>
         </div>
       </div>
@@ -790,12 +864,12 @@ function LRManagement({ currentUser, permissions }: LRManagementProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">LR Management</h2>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">LR Management</h2>
         {permissions.createLR && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm w-full sm:w-auto justify-center"
           >
             <Plus className="w-4 h-4" />
             <span>New LR</span>
@@ -804,8 +878,8 @@ function LRManagement({ currentUser, permissions }: LRManagementProps) {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-white rounded-lg shadow p-3 sm:p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
             <div className="relative">
@@ -989,16 +1063,16 @@ function LRForm({ lr, onSave, onCancel }: LRFormProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-xl font-bold text-gray-900">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto m-2">
+        <div className="p-4 sm:p-6 border-b border-gray-200">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">
             {lr ? 'Edit LR' : 'New LR Entry'}
           </h3>
         </div>
         
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="p-4 sm:p-6 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 LR Number <span className="text-red-500">*</span>
@@ -1103,12 +1177,12 @@ function LRForm({ lr, onSave, onCancel }: LRFormProps) {
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t">
             <button
               type="button"
               onClick={onCancel}
               disabled={submitting}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 w-full sm:w-auto"
             >
               Cancel
             </button>
@@ -1116,7 +1190,7 @@ function LRForm({ lr, onSave, onCancel }: LRFormProps) {
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 w-full sm:w-auto"
             >
               {submitting ? 'Saving...' : (lr ? 'Update LR' : 'Create LR')}
             </button>
@@ -1206,10 +1280,11 @@ function ChallanManagement({ currentUser, permissions }: ChallanManagementProps)
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Challan No</th>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Challan No</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver</th>
@@ -1235,8 +1310,9 @@ function ChallanManagement({ currentUser, permissions }: ChallanManagementProps)
                 </td>
               </tr>
             ))}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
         {challans.length === 0 && (
           <div className="text-center py-12 text-gray-500">No challans generated</div>
         )}
@@ -1291,13 +1367,13 @@ function ChallanForm({ onSave, onCancel }: ChallanFormProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b">
-          <h3 className="text-xl font-bold">Generate Challan</h3>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto m-2">
+        <div className="p-4 sm:p-6 border-b">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">Generate Challan</h3>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Date</label>
@@ -1436,7 +1512,9 @@ function PODManagement({ currentUser, permissions }: PODManagementProps) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">POD Entry & Tracking</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">POD Entry & Tracking</h2>
+      </div>
 
       {pendingPOD.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -1453,18 +1531,19 @@ function PODManagement({ currentUser, permissions }: PODManagementProps) {
       )}
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">LR Number</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Consignee</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Days Pending</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">LR Number</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Consignee</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Days Pending</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
             {lrs.map(lr => {
               const days = Math.floor((Date.now() - new Date(lr.date).getTime()) / (1000 * 60 * 60 * 24));
               return (
@@ -1496,9 +1575,10 @@ function PODManagement({ currentUser, permissions }: PODManagementProps) {
                   </td>
                 </tr>
               );
-            })}
-          </tbody>
-        </table>
+            }            )}
+            </tbody>
+          </table>
+        </div>
         {lrs.length === 0 && (
           <div className="text-center py-12 text-gray-500">No LRs available for POD entry</div>
         )}
@@ -1532,14 +1612,14 @@ function PODForm({ lr, onSave, onCancel }: PODFormProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-        <div className="p-6 border-b">
-          <h3 className="text-xl font-bold">POD Entry</h3>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto m-2">
+        <div className="p-4 sm:p-6 border-b">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">POD Entry</h3>
           <p className="text-sm text-gray-600 mt-1">LR: {lr.lrNumber}</p>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">POD Date</label>
             <input
@@ -1650,12 +1730,12 @@ function InvoiceManagement({ currentUser, permissions }: InvoiceManagementProps)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Invoice Management</h2>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Invoice Management</h2>
         {permissions.generateInvoice && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm w-full sm:w-auto justify-center"
           >
             <Plus className="w-4 h-4" />
             <span>Generate Invoice</span>
@@ -1664,10 +1744,11 @@ function InvoiceManagement({ currentUser, permissions }: InvoiceManagementProps)
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice No</th>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice No</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">LR Count</th>
@@ -1690,8 +1771,9 @@ function InvoiceManagement({ currentUser, permissions }: InvoiceManagementProps)
                 <td className="px-4 py-3"><StatusBadge status={inv.status} /></td>
               </tr>
             ))}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
         {invoices.length === 0 && (
           <div className="text-center py-12 text-gray-500">No invoices generated</div>
         )}
@@ -1764,13 +1846,13 @@ function InvoiceForm({ onSave, onCancel }: InvoiceFormProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b">
-          <h3 className="text-xl font-bold">Generate Invoice</h3>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto m-2">
+        <div className="p-4 sm:p-6 border-b">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">Generate Invoice</h3>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Date</label>
@@ -1940,12 +2022,12 @@ function PaymentManagement({ currentUser, permissions }: PaymentManagementProps)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Payment Management</h2>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Payment Management</h2>
         {permissions.recordPayment && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm w-full sm:w-auto justify-center"
           >
             <Plus className="w-4 h-4" />
             <span>Record Payment</span>
@@ -1984,10 +2066,11 @@ function PaymentManagement({ currentUser, permissions }: PaymentManagementProps)
 
       {/* Payment History */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Date</th>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Date</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice No</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
@@ -2007,8 +2090,9 @@ function PaymentManagement({ currentUser, permissions }: PaymentManagementProps)
                 </tr>
               );
             })}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
         {payments.length === 0 && (
           <div className="text-center py-12 text-gray-500">No payments recorded</div>
         )}
@@ -2059,13 +2143,13 @@ function PaymentForm({ invoices, onSave, onCancel, getInvoiceDetails }: PaymentF
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-        <div className="p-6 border-b">
-          <h3 className="text-xl font-bold">Record Payment</h3>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto m-2">
+        <div className="p-4 sm:p-6 border-b">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">Record Payment</h3>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Select Invoice</label>
             <select
@@ -2189,7 +2273,7 @@ function ApprovalManagement({ currentUser }: ApprovalManagementProps) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Edit Approvals</h2>
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Edit Approvals</h2>
       <div className="bg-white rounded-lg shadow p-6">
         <p className="text-gray-600">
           Edit request approval workflow will appear here. All changes to locked records require admin approval with mandatory reason.
@@ -2220,8 +2304,8 @@ function AuditLog({ currentUser }: AuditLogProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Audit Log</h2>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Audit Log</h2>
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -2237,10 +2321,11 @@ function AuditLog({ currentUser }: AuditLogProps) {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Record Type</th>
@@ -2261,8 +2346,9 @@ function AuditLog({ currentUser }: AuditLogProps) {
                 <td className="px-4 py-3 text-sm">{log.details}</td>
               </tr>
             ))}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
         {filteredLogs.length === 0 && (
           <div className="text-center py-12 text-gray-500">No audit logs</div>
         )}
