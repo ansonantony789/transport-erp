@@ -1,5 +1,188 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Unlock, AlertTriangle, CheckCircle, Clock, FileText, TrendingUp, Users, Package, DollarSign, Calendar, Search, Filter, Eye, Edit2, Trash2, Plus, X, Check } from 'lucide-react';
+import { Lock, Unlock, AlertTriangle, CheckCircle, Clock, FileText, TrendingUp, Users, Package, DollarSign, Calendar, Search, Filter, Eye, Edit2, Trash2, Plus, X, Check, LucideIcon } from 'lucide-react';
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+interface User {
+  id: number;
+  username: string;
+  password: string;
+  role: 'CLERK' | 'SUPERVISOR' | 'ACCOUNTS' | 'ADMIN';
+  name: string;
+}
+
+interface Permissions {
+  createLR: boolean;
+  confirmLR: boolean;
+  enterPOD: boolean;
+  generateInvoice: boolean;
+  recordPayment: boolean;
+  approveEdits: boolean;
+}
+
+interface LR {
+  id: number;
+  lrNumber: string;
+  date: string;
+  consignor: string;
+  consignee: string;
+  origin: string;
+  destination: string;
+  weight: number;
+  freight: number;
+  status: 'DRAFT' | 'CONFIRMED' | 'POD_RECEIVED' | 'INVOICED' | 'PAID';
+  createdBy?: number;
+  createdAt?: string;
+  confirmedBy?: number;
+  confirmedAt?: string;
+  podDate?: string;
+  podReceiver?: string;
+  podRemarks?: string;
+  podEnteredBy?: number;
+  podEnteredAt?: string;
+}
+
+interface Challan {
+  id: number;
+  number: string;
+  date: string;
+  vehicle: string;
+  driver: string;
+  route: string;
+  lrIds: number[];
+  createdBy: number;
+  createdAt: string;
+  locked: boolean;
+}
+
+interface Invoice {
+  id: number;
+  number: string;
+  date: string;
+  customer: string;
+  lrIds: number[];
+  freightTotal: number;
+  gst: number;
+  grandTotal: number;
+  status: 'UNPAID' | 'PARTIAL' | 'PAID';
+  createdBy: number;
+  createdAt: string;
+}
+
+interface Payment {
+  id: number;
+  invoiceId: number;
+  date: string;
+  amount: number;
+  mode: string;
+  reference: string;
+  recordedBy: number;
+  recordedAt: string;
+}
+
+interface AuditLog {
+  id: number;
+  userId: number;
+  userName: string;
+  action: string;
+  recordType: string;
+  recordId: number;
+  details: string;
+  timestamp: string;
+  oldValue?: string;
+  newValue?: string;
+}
+
+interface LoginScreenProps {
+  onLogin: (user: User) => void;
+}
+
+interface NavTabProps {
+  active: boolean;
+  onClick: () => void;
+  icon: LucideIcon;
+  children: React.ReactNode;
+}
+
+interface DashboardProps {
+  currentUser: User;
+}
+
+interface StatCardProps {
+  title: string;
+  value: number;
+  subtitle: string;
+  icon: LucideIcon;
+  color: 'blue' | 'green' | 'purple' | 'red';
+}
+
+interface LRManagementProps {
+  currentUser: User;
+  permissions: Permissions;
+}
+
+interface LRFormProps {
+  lr: LR | null;
+  onSave: (lrData: Partial<LR>) => Promise<void>;
+  onCancel: () => void;
+}
+
+interface StatusBadgeProps {
+  status: string;
+}
+
+interface ChallanManagementProps {
+  currentUser: User;
+  permissions: Permissions;
+}
+
+interface ChallanFormProps {
+  onSave: (challanData: Partial<Challan>) => Promise<void>;
+  onCancel: () => void;
+}
+
+interface PODManagementProps {
+  currentUser: User;
+  permissions: Permissions;
+}
+
+interface PODFormProps {
+  lr: LR;
+  onSave: (podData: { podDate: string; receiver: string; remarks: string }) => Promise<void>;
+  onCancel: () => void;
+}
+
+interface InvoiceManagementProps {
+  currentUser: User;
+  permissions: Permissions;
+}
+
+interface InvoiceFormProps {
+  onSave: (invoiceData: Partial<Invoice>) => Promise<void>;
+  onCancel: () => void;
+}
+
+interface PaymentManagementProps {
+  currentUser: User;
+  permissions: Permissions;
+}
+
+interface PaymentFormProps {
+  invoices: Invoice[];
+  onSave: (paymentData: Partial<Payment>) => Promise<void>;
+  onCancel: () => void;
+  getInvoiceDetails: (invoiceId: number) => { invoice: Invoice; paid: number; outstanding: number; days: number } | null;
+}
+
+interface ApprovalManagementProps {
+  currentUser: User;
+}
+
+interface AuditLogProps {
+  currentUser: User;
+}
 
 // ============================================================================
 // PERSISTENT STORAGE LAYER
@@ -60,14 +243,14 @@ const DB = {
 // AUTHENTICATION & AUTHORIZATION
 // ============================================================================
 
-const PERMISSIONS = {
+const PERMISSIONS: Record<string, Permissions> = {
   CLERK: { createLR: true, confirmLR: false, enterPOD: true, generateInvoice: false, recordPayment: false, approveEdits: false },
   SUPERVISOR: { createLR: true, confirmLR: true, enterPOD: true, generateInvoice: false, recordPayment: false, approveEdits: false },
   ACCOUNTS: { createLR: false, confirmLR: false, enterPOD: false, generateInvoice: true, recordPayment: true, approveEdits: false },
   ADMIN: { createLR: true, confirmLR: true, enterPOD: true, generateInvoice: true, recordPayment: true, approveEdits: true }
 };
 
-function LoginScreen({ onLogin }) {
+function LoginScreen({ onLogin }: LoginScreenProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -149,7 +332,7 @@ function LoginScreen({ onLogin }) {
 // ============================================================================
 
 export default function TransportERP() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
 
@@ -252,7 +435,7 @@ export default function TransportERP() {
   );
 }
 
-function NavTab({ active, onClick, icon: Icon, children }) {
+function NavTab({ active, onClick, icon: Icon, children }: NavTabProps) {
   return (
     <button
       onClick={onClick}
@@ -272,8 +455,8 @@ function NavTab({ active, onClick, icon: Icon, children }) {
 // DASHBOARD
 // ============================================================================
 
-function Dashboard({ currentUser }) {
-  const [stats, setStats] = useState(null);
+function Dashboard({ currentUser }: DashboardProps) {
+  const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
     loadStats();
@@ -448,7 +631,7 @@ function Dashboard({ currentUser }) {
   );
 }
 
-function StatCard({ title, value, subtitle, icon: Icon, color }) {
+function StatCard({ title, value, subtitle, icon: Icon, color }: StatCardProps) {
   const colors = {
     blue: 'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
@@ -476,10 +659,10 @@ function StatCard({ title, value, subtitle, icon: Icon, color }) {
 // LR MANAGEMENT
 // ============================================================================
 
-function LRManagement({ currentUser, permissions }) {
-  const [lrs, setLRs] = useState([]);
+function LRManagement({ currentUser, permissions }: LRManagementProps) {
+  const [lrs, setLRs] = useState<LR[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [editingLR, setEditingLR] = useState(null);
+  const [editingLR, setEditingLR] = useState<LR | null>(null);
   const [filter, setFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -702,7 +885,7 @@ function LRManagement({ currentUser, permissions }) {
                         </button>
                       )}
                       {lr.status !== 'DRAFT' && (
-                        <Lock className="w-4 h-4 text-gray-400" title="Locked" />
+                        <span title="Locked"><Lock className="w-4 h-4 text-gray-400" /></span>
                       )}
                     </div>
                   </td>
@@ -730,8 +913,28 @@ function LRManagement({ currentUser, permissions }) {
   );
 }
 
-function LRForm({ lr, onSave, onCancel }) {
-  const [formData, setFormData] = useState(lr || {
+function LRForm({ lr, onSave, onCancel }: LRFormProps) {
+  const [formData, setFormData] = useState<{
+    lrNumber: string;
+    date: string;
+    consignor: string;
+    consignee: string;
+    origin: string;
+    destination: string;
+    weight: string;
+    freight: string;
+    status: string;
+  }>(lr ? {
+    lrNumber: lr.lrNumber,
+    date: lr.date,
+    consignor: lr.consignor,
+    consignee: lr.consignee,
+    origin: lr.origin,
+    destination: lr.destination,
+    weight: lr.weight.toString(),
+    freight: lr.freight.toString(),
+    status: lr.status
+  } : {
     lrNumber: '',
     date: new Date().toISOString().split('T')[0],
     consignor: '',
@@ -768,14 +971,15 @@ function LRForm({ lr, onSave, onCancel }) {
     
     try {
       await onSave({
-        ...formData,
         lrNumber: formData.lrNumber.trim(),
         consignor: formData.consignor.trim(),
         consignee: formData.consignee.trim(),
         origin: formData.origin.trim(),
         destination: formData.destination.trim(),
         weight: parseFloat(formData.weight) || 0,
-        freight: parseFloat(formData.freight) || 0
+        freight: parseFloat(formData.freight) || 0,
+        date: formData.date,
+        status: formData.status as LR['status']
       });
     } catch (error) {
       console.error('Submit error:', error);
@@ -923,7 +1127,7 @@ function LRForm({ lr, onSave, onCancel }) {
   );
 }
 
-function StatusBadge({ status }) {
+function StatusBadge({ status }: StatusBadgeProps) {
   const styles = {
     DRAFT: 'bg-gray-100 text-gray-800',
     CONFIRMED: 'bg-blue-100 text-blue-800',
@@ -945,8 +1149,8 @@ function StatusBadge({ status }) {
 // CHALLAN MANAGEMENT
 // ============================================================================
 
-function ChallanManagement({ currentUser, permissions }) {
-  const [challans, setChallans] = useState([]);
+function ChallanManagement({ currentUser, permissions }: ChallanManagementProps) {
+  const [challans, setChallans] = useState<Challan[]>([]);
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
@@ -1048,15 +1252,15 @@ function ChallanManagement({ currentUser, permissions }) {
   );
 }
 
-function ChallanForm({ onSave, onCancel }) {
+function ChallanForm({ onSave, onCancel }: ChallanFormProps) {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     vehicle: '',
     driver: '',
     route: '',
-    lrIds: []
+    lrIds: [] as number[]
   });
-  const [availableLRs, setAvailableLRs] = useState([]);
+  const [availableLRs, setAvailableLRs] = useState<LR[]>([]);
 
   useEffect(() => {
     loadAvailableLRs();
@@ -1064,11 +1268,11 @@ function ChallanForm({ onSave, onCancel }) {
 
   const loadAvailableLRs = async () => {
     const lrs = await DB.get('lrs') || [];
-    const confirmed = lrs.filter(lr => lr.status === 'CONFIRMED');
+    const confirmed = lrs.filter((lr: LR) => lr.status === 'CONFIRMED');
     setAvailableLRs(confirmed);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.lrIds.length === 0) {
       alert('Please select at least one LR');
@@ -1077,7 +1281,7 @@ function ChallanForm({ onSave, onCancel }) {
     onSave(formData);
   };
 
-  const toggleLR = (lrId) => {
+  const toggleLR = (lrId: number) => {
     setFormData(prev => ({
       ...prev,
       lrIds: prev.lrIds.includes(lrId)
@@ -1181,9 +1385,9 @@ function ChallanForm({ onSave, onCancel }) {
 // POD MANAGEMENT
 // ============================================================================
 
-function PODManagement({ currentUser, permissions }) {
-  const [lrs, setLRs] = useState([]);
-  const [selectedLR, setSelectedLR] = useState(null);
+function PODManagement({ currentUser, permissions }: PODManagementProps) {
+  const [lrs, setLRs] = useState<LR[]>([]);
+  const [selectedLR, setSelectedLR] = useState<LR | null>(null);
 
   useEffect(() => {
     loadLRs();
@@ -1311,14 +1515,14 @@ function PODManagement({ currentUser, permissions }) {
   );
 }
 
-function PODForm({ lr, onSave, onCancel }) {
+function PODForm({ lr, onSave, onCancel }: PODFormProps) {
   const [formData, setFormData] = useState({
     podDate: new Date().toISOString().split('T')[0],
     receiver: '',
     remarks: ''
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.receiver) {
       alert('Receiver name is required');
@@ -1364,7 +1568,7 @@ function PODForm({ lr, onSave, onCancel }) {
               value={formData.remarks}
               onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg"
-              rows="3"
+              rows={3}
             />
           </div>
 
@@ -1393,8 +1597,8 @@ function PODForm({ lr, onSave, onCancel }) {
 // INVOICE MANAGEMENT
 // ============================================================================
 
-function InvoiceManagement({ currentUser, permissions }) {
-  const [invoices, setInvoices] = useState([]);
+function InvoiceManagement({ currentUser, permissions }: InvoiceManagementProps) {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
@@ -1503,14 +1707,14 @@ function InvoiceManagement({ currentUser, permissions }) {
   );
 }
 
-function InvoiceForm({ onSave, onCancel }) {
+function InvoiceForm({ onSave, onCancel }: InvoiceFormProps) {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     customer: '',
     gstRate: 5,
-    lrIds: []
+    lrIds: [] as number[]
   });
-  const [availableLRs, setAvailableLRs] = useState([]);
+  const [availableLRs, setAvailableLRs] = useState<LR[]>([]);
 
   useEffect(() => {
     loadAvailableLRs();
@@ -1518,7 +1722,7 @@ function InvoiceForm({ onSave, onCancel }) {
 
   const loadAvailableLRs = async () => {
     const lrs = await DB.get('lrs') || [];
-    const eligible = lrs.filter(lr => lr.status === 'POD_RECEIVED');
+    const eligible = lrs.filter((lr: LR) => lr.status === 'POD_RECEIVED');
     setAvailableLRs(eligible);
   };
 
@@ -1527,7 +1731,7 @@ function InvoiceForm({ onSave, onCancel }) {
   const gst = (freightTotal * formData.gstRate) / 100;
   const grandTotal = freightTotal + gst;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (formData.lrIds.length === 0) {
@@ -1550,7 +1754,7 @@ function InvoiceForm({ onSave, onCancel }) {
     });
   };
 
-  const toggleLR = (lrId) => {
+  const toggleLR = (lrId: number) => {
     setFormData(prev => ({
       ...prev,
       lrIds: prev.lrIds.includes(lrId)
@@ -1661,9 +1865,9 @@ function InvoiceForm({ onSave, onCancel }) {
 // PAYMENT MANAGEMENT
 // ============================================================================
 
-function PaymentManagement({ currentUser, permissions }) {
-  const [payments, setPayments] = useState([]);
-  const [invoices, setInvoices] = useState([]);
+function PaymentManagement({ currentUser, permissions }: PaymentManagementProps) {
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
@@ -1822,7 +2026,7 @@ function PaymentManagement({ currentUser, permissions }) {
   );
 }
 
-function PaymentForm({ invoices, onSave, onCancel, getInvoiceDetails }) {
+function PaymentForm({ invoices, onSave, onCancel, getInvoiceDetails }: PaymentFormProps) {
   const [formData, setFormData] = useState({
     invoiceId: '',
     date: new Date().toISOString().split('T')[0],
@@ -1833,7 +2037,7 @@ function PaymentForm({ invoices, onSave, onCancel, getInvoiceDetails }) {
 
   const selectedInvoice = formData.invoiceId ? getInvoiceDetails(parseInt(formData.invoiceId)) : null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const amount = parseFloat(formData.amount);
@@ -1966,8 +2170,8 @@ function PaymentForm({ invoices, onSave, onCancel, getInvoiceDetails }) {
 // APPROVAL MANAGEMENT
 // ============================================================================
 
-function ApprovalManagement({ currentUser }) {
-  const [editRequests, setEditRequests] = useState([]);
+function ApprovalManagement({ currentUser }: ApprovalManagementProps) {
+  const [editRequests, setEditRequests] = useState<any[]>([]);
 
   useEffect(() => {
     loadEditRequests();
@@ -1999,8 +2203,8 @@ function ApprovalManagement({ currentUser }) {
 // AUDIT LOG
 // ============================================================================
 
-function AuditLog({ currentUser }) {
-  const [logs, setLogs] = useState([]);
+function AuditLog({ currentUser }: AuditLogProps) {
+  const [logs, setLogs] = useState<AuditLog[]>([]);
   const [filter, setFilter] = useState('ALL');
 
   useEffect(() => {
