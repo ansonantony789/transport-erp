@@ -1,81 +1,55 @@
-# Transport ERP
+# Transport ERP System
 
-Enterprise Logistics Management System built with React, TypeScript, and Vite.
+## Overview
+Transport ERP is a web-based business management system designed for small to mid-sized transport and logistics companies.
+It helps manage vehicles, drivers, trips, and basic billing from a single platform.
 
-## Features
+This project demonstrates how I design and build real-world, business-focused software systems.
 
-- **LR Management**: Create, edit, and confirm LR (Lorry Receipt) entries
-- **Challan Management**: Generate challans for confirmed LRs
-- **POD Entry**: Track Proof of Delivery entries
-- **Invoice Management**: Generate invoices with GST calculation
-- **Payment Management**: Record payments and track outstanding amounts
-- **Audit Log**: Complete audit trail of all system actions
-- **Role-based Access Control**: Clerk, Supervisor, Accounts, and Admin roles
+## Problem Statement
+Many transport companies still rely on Excel sheets, phone calls, or manual records to manage daily operations.
+This leads to data duplication, errors, and lack of visibility.
+
+Transport ERP centralizes these operations into one system, making management simpler and more reliable.
+
+## Key Features
+- Vehicle management
+- Driver management
+- Trip and route tracking
+- Basic invoice / billing records
+- Role-based access (Admin / User)
+- REST API–based architecture
 
 ## Tech Stack
+- Frontend: React
+- Backend: Node.js, Express
+- Database: MongoDB
+- Authentication: JWT (if applicable)
 
-- React 18
-- TypeScript
-- Vite
-- Lucide React (Icons)
-- LocalStorage (Data persistence)
+## My Role
+- Designed the overall system architecture
+- Built backend REST APIs
+- Implemented core business logic
+- Integrated frontend with backend services
 
-## Getting Started
+## Project Status
+This is a prototype / learning project created to demonstrate system design and backend–frontend integration.
+For client projects, the scope, UI, and features are customized based on business requirements.
 
-### Prerequisites
+## How This Relates to Client Work
+This project reflects:
+- How I structure business applications
+- How I think about real operational problems
+- How I design scalable backend APIs
 
-- Node.js (v16 or higher)
-- npm or yarn
+Production client projects include better UI/UX, documentation, testing, and deployment practices.
 
-### Installation
+## Screenshots
+<img width="1364" height="628" alt="image" src="https://github.com/user-attachments/assets/e734a694-cc31-41ff-bbae-4d28e8241d3e" />
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd transport-erp
-```
+<img width="1363" height="615" alt="image" src="https://github.com/user-attachments/assets/2411c74d-8c06-467d-8845-c9af1a1f1ef5" />
 
-2. Install dependencies:
-```bash
-npm install
-```
 
-3. Start the development server:
-```bash
-npm run dev
-```
 
-4. Open your browser and navigate to `http://localhost:5173`
-
-## Build for Production
-
-```bash
-npm run build
-```
-
-The built files will be in the `dist` directory.
-
-## Demo Credentials
-
-- **Clerk**: clerk1 / clerk123
-- **Supervisor**: super1 / super123
-- **Accounts**: accounts1 / acc123
-- **Admin**: admin / admin123
-
-## Project Structure
-
-```
-transport-erp/
-├── src/
-│   ├── App.tsx          # Main application component
-│   ├── main.tsx         # Entry point
-│   └── vite-env.d.ts    # Vite type definitions
-├── index.html           # HTML template
-├── vite.config.ts       # Vite configuration
-├── tsconfig.json        # TypeScript configuration
-└── package.json         # Dependencies and scripts
-```
-
-## License
-
-Private project
+## Contact
+If you’d like to discuss similar software for your business, feel free to reach out.
